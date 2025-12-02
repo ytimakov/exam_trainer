@@ -1,0 +1,2516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажёр экзаменов</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --bg-hover: #30363d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-red: #f85149;
+            --accent-orange: #d29922;
+            --accent-purple: #a371f7;
+            --accent-cyan: #39c5cf;
+            --border-color: #30363d;
+            --shadow: 0 8px 24px rgba(0,0,0,0.4);
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 4px; }
+
+        /* ===== TOP NAVIGATION ===== */
+        .top-nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            height: 60px;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .app-logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-right: 20px;
+        }
+
+        .mode-tabs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .mode-tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-tab:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .mode-tab.active { background: var(--bg-tertiary); color: var(--accent-cyan); }
+
+        .mode-tab .badge {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .exam-selector {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .exam-selector label { color: var(--text-secondary); font-size: 0.9rem; }
+
+        .exam-selector select {
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            min-width: 200px;
+        }
+
+        .logout-btn {
+            margin-left: 10px;
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        /* ===== LOGIN FORM ===== */
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-form {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: var(--shadow);
+        }
+
+        .login-form h2 {
+            margin-bottom: 24px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+
+        .login-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .login-form label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .login-form input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+        .login-form .error {
+            color: var(--accent-red);
+            font-size: 0.85rem;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .login-form .error.show {
+            display: block;
+        }
+
+        .login-form button {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-cyan);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--bg-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .login-form button:hover {
+            background: var(--accent-blue);
+        }
+
+        .login-form button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .app-content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .page.active { display: flex; flex-direction: column; }
+
+        /* ===== PAGE HEADER ===== */
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-shrink: 0;
+        }
+
+        .page-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 12px 24px;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: var(--bg-primary);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(88,166,255,0.4); }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--accent-green), #2ea043);
+            color: var(--bg-primary);
+        }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(63,185,80,0.4); }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover { background: var(--bg-tertiary); }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--accent-orange), #b88c1c);
+            color: var(--bg-primary);
+        }
+
+        .btn-danger {
+            background: var(--bg-hover);
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-outline:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+        .btn-sm { padding: 8px 16px; font-size: 0.85rem; }
+        .btn-lg { padding: 16px 32px; font-size: 1.1rem; }
+
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        .btn-mastered {
+            background: var(--bg-hover);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+        }
+        .btn-mastered.active { background: rgba(63,185,80,0.2); }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ===== STATS GRID ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .stat-card.total .stat-value { color: var(--accent-cyan); }
+        .stat-card.mastered .stat-value { color: var(--accent-green); }
+        .stat-card.attempted .stat-value { color: var(--accent-blue); }
+        .stat-card.accuracy .stat-value { color: var(--accent-purple); }
+        .stat-card.errors .stat-value { color: var(--accent-red); }
+
+        /* ===== SECTION LIST ===== */
+        .section-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .section-item {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: 16px;
+            padding: 16px 20px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .section-item:hover { background: var(--bg-hover); }
+
+        .section-name { font-weight: 500; }
+
+        .section-progress {
+            width: 120px;
+            height: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .section-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .section-stats {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .section-action { opacity: 0; transition: opacity 0.2s; }
+        .section-item:hover .section-action { opacity: 1; }
+
+        /* ===== QUESTION LIST ===== */
+        .questions-toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .filter-btn.active { border-color: var(--accent-blue); color: var(--accent-blue); }
+
+        .question-count {
+            margin-left: auto;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .question-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .question-item {
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .question-item:hover { border-color: var(--accent-blue); background: rgba(88,166,255,0.05); }
+        .question-item.active { border-color: var(--accent-blue); background: rgba(88,166,255,0.1); }
+
+        .question-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .question-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            font-weight: 500;
+        }
+
+        .question-text {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .question-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .badge-mastered { background: rgba(63,185,80,0.2); color: var(--accent-green); }
+        .badge-attempted { background: rgba(88,166,255,0.2); color: var(--accent-blue); }
+        .badge-error { background: rgba(248,81,73,0.2); color: var(--accent-red); }
+        .badge-correct { background: rgba(63,185,80,0.2); color: var(--accent-green); }
+        .badge-incorrect { background: rgba(248,81,73,0.2); color: var(--accent-red); }
+        .badge-skipped { background: rgba(110,118,129,0.2); color: var(--text-muted); }
+        .badge-dont-know { background: rgba(210,153,34,0.2); color: var(--accent-orange); }
+
+        /* ===== QUESTION CARD ===== */
+        .question-card-container {
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .question-nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .nav-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .nav-info {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .question-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 30px;
+        }
+
+        .question-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+        }
+
+        .question-card-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+        }
+
+        .question-card-text {
+            font-size: 1.2rem;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+
+        .answers-container { margin-top: 30px; }
+
+        .answers-title {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .answer-item {
+            padding: 16px 20px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .answer-item:hover:not(.disabled) { border-color: var(--accent-blue); }
+        .answer-item.selected { border-color: var(--accent-blue); background: rgba(88,166,255,0.1); }
+        .answer-item.correct { border-color: var(--accent-green); background: rgba(63,185,80,0.1); }
+        .answer-item.incorrect { border-color: var(--accent-red); background: rgba(248,81,73,0.1); }
+        .answer-item.disabled { cursor: default; }
+
+        .answer-radio {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            margin-top: 2px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .answer-item.selected .answer-radio { border-color: var(--accent-blue); background: var(--accent-blue); }
+        .answer-item.selected .answer-radio::after { content: ''; width: 8px; height: 8px; background: var(--bg-primary); border-radius: 50%; }
+        .answer-item.correct .answer-radio { border-color: var(--accent-green); background: var(--accent-green); color: var(--bg-primary); }
+        .answer-item.correct .answer-radio::after { content: '✓'; }
+        .answer-item.incorrect.selected .answer-radio { border-color: var(--accent-red); background: var(--accent-red); color: var(--bg-primary); }
+        .answer-item.incorrect.selected .answer-radio::after { content: '✗'; }
+
+        .answer-text { flex: 1; line-height: 1.5; }
+
+        .question-actions {
+            margin-top: 30px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .question-result {
+            margin-top: 24px;
+            padding: 20px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+
+        .question-result.correct { background: rgba(63,185,80,0.1); border: 1px solid var(--accent-green); }
+        .question-result.incorrect { background: rgba(248,81,73,0.1); border: 1px solid var(--accent-red); }
+
+        .question-result-icon { font-size: 3rem; margin-bottom: 10px; }
+        .question-result-text { font-size: 1.1rem; font-weight: 600; }
+        .question-result.correct .question-result-text { color: var(--accent-green); }
+        .question-result.incorrect .question-result-text { color: var(--accent-red); }
+
+        /* ===== TEST START FORM ===== */
+        .test-start-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .checkbox-item input {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent-blue);
+        }
+
+        /* ===== TEST TOOLBAR ===== */
+        .test-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .test-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+        }
+
+        .test-stat { display: flex; align-items: center; gap: 6px; }
+        .test-stat-value { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+        .test-stat.answered .test-stat-value { color: var(--accent-green); }
+        .test-stat.skipped .test-stat-value { color: var(--text-muted); }
+
+        /* ===== TEST RESULT ===== */
+        .result-header {
+            text-align: center;
+            padding: 40px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin-bottom: 24px;
+        }
+
+        .result-icon { font-size: 5rem; margin-bottom: 20px; }
+        .result-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 10px; }
+        .result-subtitle { color: var(--text-secondary); font-size: 1rem; }
+
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .result-detail {
+            text-align: center;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+        }
+
+        .result-detail-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .result-detail-label { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 16px; }
+        .modal-text { color: var(--text-secondary); margin-bottom: 24px; }
+        .modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
+
+        /* ===== FILTER PANEL ===== */
+        .filter-panel {
+            position: fixed;
+            top: 60px;
+            right: -350px;
+            width: 350px;
+            height: calc(100vh - 60px);
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            padding: 24px;
+            transition: right 0.3s;
+            z-index: 100;
+            overflow-y: auto;
+        }
+
+        .filter-panel.active { right: 0; }
+
+        .filter-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .filter-panel-title { font-size: 1.1rem; font-weight: 600; }
+
+        .filter-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .filter-section { margin-bottom: 24px; }
+        .filter-section-title { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; font-weight: 500; }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            cursor: pointer;
+        }
+
+        .filter-option input { width: 18px; height: 18px; accent-color: var(--accent-blue); }
+
+        /* ===== UTILITIES ===== */
+        .hidden { display: none !important; }
+        .flex-1 { flex: 1; }
+        .text-center { text-align: center; }
+        .mb-24 { margin-bottom: 24px; }
+        .mt-auto { margin-top: auto; }
+
+        /* ===== MOBILE STYLES ===== */
+        @media (max-width: 768px) {
+            /* Top Navigation */
+            .top-nav {
+                padding: 0 12px;
+                height: auto;
+                min-height: 56px;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding-top: 8px;
+                padding-bottom: 8px;
+            }
+
+            .app-logo {
+                font-size: 1.1rem;
+                margin-right: 8px;
+            }
+
+            .mode-tabs {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+                gap: 2px;
+                padding-top: 8px;
+                border-top: 1px solid var(--border-color);
+                margin-top: 4px;
+            }
+
+            .mode-tab {
+                padding: 10px 12px;
+                font-size: 0.8rem;
+                flex: 1;
+                justify-content: center;
+            }
+
+            .mode-tab-text { display: none; }
+            .app-logo .mode-tab-text { display: none; }
+
+            .exam-selector {
+                margin-left: 0;
+                flex: 1;
+            }
+
+            .exam-selector label { display: none; }
+
+            .exam-selector select {
+                width: 100%;
+                min-width: auto;
+                font-size: 0.85rem;
+                padding: 8px 10px;
+            }
+
+            /* Pages */
+            .page { padding: 16px; }
+
+            .page-header { margin-bottom: 16px; }
+            .page-header h1 { font-size: 1.25rem; }
+
+            .breadcrumb { font-size: 0.8rem; flex-wrap: wrap; }
+
+            /* Stats */
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                margin-bottom: 16px;
+            }
+
+            .stat-card { padding: 14px 12px; }
+            .stat-value { font-size: 1.5rem; }
+            .stat-label { font-size: 0.75rem; }
+
+            /* Cards */
+            .card { padding: 16px; }
+            .card-title { font-size: 1rem; margin-bottom: 12px; }
+
+            /* Section List */
+            .section-item {
+                grid-template-columns: 1fr auto;
+                gap: 8px;
+                padding: 12px 14px;
+            }
+
+            .section-progress { width: 80px; height: 6px; }
+            .section-stats { font-size: 0.75rem; }
+            .section-action { opacity: 1; }
+            .section-action .btn { padding: 6px 10px; font-size: 0.75rem; }
+
+            /* Question List */
+            .questions-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .filter-btn { 
+                justify-content: center;
+                padding: 12px 16px;
+                font-size: 1rem;
+            }
+
+            .question-count { 
+                margin-left: 0; 
+                text-align: center;
+                padding: 8px 0;
+            }
+
+            .question-item { padding: 14px; }
+            .question-number { font-size: 0.8rem; }
+            .question-text { font-size: 0.9rem; }
+            .question-meta { gap: 6px; margin-top: 8px; }
+            .badge { font-size: 0.7rem; padding: 2px 6px; }
+
+            /* Question Card */
+            .question-card-container { padding: 0; }
+
+            .question-nav {
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-bottom: 16px;
+            }
+
+            .nav-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 1.3rem;
+            }
+
+            .nav-info { 
+                order: -1;
+                width: 100%;
+                text-align: center;
+                margin-bottom: 4px;
+            }
+
+            .question-nav > div:last-child {
+                width: 100%;
+                margin-left: 0 !important;
+                margin-top: 8px;
+            }
+
+            .question-nav > div:last-child .btn {
+                width: 100%;
+            }
+
+            .question-card { padding: 20px 16px; }
+
+            .question-card-header { 
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .question-card-number { font-size: 0.85rem; }
+            .question-card-text { font-size: 1.05rem; }
+
+            .answers-container { margin-top: 20px; }
+            .answers-title { font-size: 0.85rem; margin-bottom: 12px; }
+
+            .answer-item {
+                padding: 14px 12px;
+                gap: 10px;
+            }
+
+            .answer-radio { width: 24px; height: 24px; }
+            .answer-text { font-size: 0.95rem; }
+
+            .question-actions {
+                margin-top: 20px;
+                padding-top: 16px;
+                flex-direction: column;
+            }
+
+            .question-actions .btn { width: 100%; }
+
+            .question-result { padding: 16px; }
+            .question-result-icon { font-size: 2.5rem; }
+            .question-result-text { font-size: 1rem; }
+
+            /* Buttons */
+            .btn { 
+                padding: 14px 20px;
+                font-size: 0.95rem;
+            }
+
+            .btn-lg { 
+                padding: 16px 24px;
+                font-size: 1rem;
+                width: 100%;
+            }
+
+            .btn-sm { padding: 10px 14px; font-size: 0.85rem; }
+
+            /* Test Mode */
+            .test-toolbar {
+                flex-direction: column;
+                gap: 12px;
+                padding: 14px;
+            }
+
+            .test-stats {
+                width: 100%;
+                justify-content: space-around;
+            }
+
+            .test-toolbar > div:last-child {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .test-toolbar .btn { width: 100%; }
+
+            .test-start-form { padding: 0; }
+
+            /* Result Mode */
+            .result-header { padding: 24px 16px; }
+            .result-icon { font-size: 4rem; }
+            .result-title { font-size: 1.4rem; }
+            .result-subtitle { font-size: 0.9rem; }
+
+            .result-details {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .result-detail { padding: 12px; }
+            .result-detail-value { font-size: 1.2rem; }
+            .result-detail-label { font-size: 0.75rem; }
+
+            /* Filter Panel */
+            .filter-panel {
+                width: 100%;
+                right: -100%;
+                padding: 20px 16px;
+            }
+
+            .filter-panel.active { right: 0; }
+
+            .filter-panel-header { margin-bottom: 20px; }
+            .filter-close { font-size: 2rem; padding: 8px; }
+
+            .filter-section { margin-bottom: 20px; }
+
+            .filter-option {
+                padding: 12px 0;
+            }
+
+            .filter-option input { width: 22px; height: 22px; }
+
+            /* Modal */
+            .modal { 
+                padding: 24px 20px;
+                margin: 16px;
+                max-width: none;
+                width: calc(100% - 32px);
+            }
+
+            .modal-title { font-size: 1.1rem; }
+            .modal-actions { flex-direction: column; }
+            .modal-actions .btn { width: 100%; }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 360px) {
+            .top-nav { padding: 6px 8px; }
+            .app-logo { font-size: 1rem; }
+            .mode-tab { padding: 8px 8px; font-size: 0.75rem; }
+            .page { padding: 12px; }
+            .stats-grid { gap: 8px; }
+            .stat-card { padding: 10px 8px; }
+            .stat-value { font-size: 1.3rem; }
+            .question-card { padding: 16px 12px; }
+            .nav-btn { width: 40px; height: 40px; }
+        }
+
+        /* Touch-friendly improvements */
+        @media (hover: none) and (pointer: coarse) {
+            .section-action { opacity: 1; }
+            
+            .answer-item:active:not(.disabled) {
+                transform: scale(0.98);
+            }
+
+            .btn:active {
+                transform: scale(0.98) !important;
+            }
+
+            .question-item:active {
+                transform: scale(0.99);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- TOP NAVIGATION -->
+    <nav class="top-nav">
+        <div class="app-logo">🎯 <span class="mode-tab-text">Тренажёр</span></div>
+        <div class="mode-tabs">
+            <button class="mode-tab active" data-mode="main" onclick="switchMode('main')">
+                📚 <span class="mode-tab-text">Основной</span>
+            </button>
+            <button class="mode-tab" data-mode="test" onclick="switchMode('test')">
+                ✏️ <span class="mode-tab-text">Тест</span>
+            </button>
+            <button class="mode-tab" data-mode="result" onclick="switchMode('result')">
+                📊 <span class="mode-tab-text">Результат</span>
+                <span class="badge hidden" id="result-badge">1</span>
+            </button>
+        </div>
+        <div class="exam-selector">
+            <label>Экзамен:</label>
+            <select id="exam-select" onchange="switchExam()"></select>
+        </div>
+        <button class="logout-btn hidden" id="logout-btn" onclick="logout()">Выход</button>
+    </nav>
+
+    <!-- LOGIN FORM -->
+    <div class="login-container" id="login-container">
+        <div class="login-form">
+            <h2>🔐 Авторизация</h2>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="secret-input">Secret строка:</label>
+                    <input type="text" id="secret-input" placeholder="Введите Secret" required autocomplete="off">
+                    <div class="error" id="login-error"></div>
+                </div>
+                <button type="submit" id="login-btn">Войти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP CONTENT -->
+    <div class="app-content hidden" id="app-content">
+        <!-- ==================== MAIN MODE ==================== -->
+        <!-- Main Home -->
+        <div class="page active" id="page-main-home">
+            <div class="page-header">
+                <h1>📊 Статистика</h1>
+            </div>
+            
+            <div class="stats-grid" id="main-stats-grid">
+                <div class="stat-card total">
+                    <div class="stat-value" id="stat-total">0</div>
+                    <div class="stat-label">Всего вопросов</div>
+                </div>
+                <div class="stat-card mastered">
+                    <div class="stat-value" id="stat-mastered">0</div>
+                    <div class="stat-label">Усвоено</div>
+                </div>
+                <div class="stat-card attempted">
+                    <div class="stat-value" id="stat-attempted">0</div>
+                    <div class="stat-label">Пройдено</div>
+                </div>
+                <div class="stat-card accuracy">
+                    <div class="stat-value" id="stat-accuracy">0%</div>
+                    <div class="stat-label">Точность</div>
+                </div>
+            </div>
+
+            <div class="card mb-24">
+                <div class="card-title">📋 Разделы</div>
+                <div class="section-list" id="section-list"></div>
+            </div>
+
+            <div style="text-align: center;">
+                <button class="btn btn-primary btn-lg" onclick="goToPage('main-questions')">
+                    📝 Все вопросы
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Questions -->
+        <div class="page" id="page-main-questions">
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <a onclick="goToPage('main-home')">Главная</a>
+                    <span>/</span>
+                    <span>Вопросы</span>
+                </div>
+            </div>
+
+            <div class="questions-toolbar">
+                <button class="filter-btn" onclick="toggleFilterPanel()">
+                    🔍 Фильтр
+                </button>
+                <span class="question-count" id="main-question-count">0 вопросов</span>
+            </div>
+
+            <div class="question-list" id="main-question-list"></div>
+        </div>
+
+        <!-- Main Question Card -->
+        <div class="page" id="page-main-card">
+            <div class="question-card-container">
+                <div class="breadcrumb mb-24">
+                    <a onclick="goToPage('main-home')">Главная</a>
+                    <span>/</span>
+                    <a onclick="goToPage('main-questions')">Вопросы</a>
+                    <span>/</span>
+                    <span>Карточка</span>
+                </div>
+
+                <div class="question-nav">
+                    <button class="nav-btn" onclick="goToPage('main-questions')" title="К списку">📋</button>
+                    <button class="nav-btn" onclick="navQuestion('first')" title="В начало">⏮</button>
+                    <button class="nav-btn" onclick="navQuestion('prev')" title="Предыдущий">←</button>
+                    <span class="nav-info" id="main-nav-info">1 / 100</span>
+                    <button class="nav-btn" onclick="navQuestion('next')" title="Следующий">→</button>
+                    <button class="nav-btn" onclick="navQuestion('last')" title="В конец">⏭</button>
+                </div>
+
+                <div class="question-card" id="main-question-card"></div>
+            </div>
+        </div>
+
+        <!-- ==================== TEST MODE ==================== -->
+        <!-- Test Home -->
+        <div class="page" id="page-test-home">
+            <div class="page-header">
+                <h1>✏️ Тестирование</h1>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card total">
+                    <div class="stat-value" id="test-stat-total">0</div>
+                    <div class="stat-label">Всего вопросов</div>
+                </div>
+                <div class="stat-card mastered">
+                    <div class="stat-value" id="test-stat-mastered">0</div>
+                    <div class="stat-label">Усвоено</div>
+                </div>
+            </div>
+
+            <div class="card mb-24">
+                <div class="card-title">🎲 Быстрый старт</div>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    Пробный тест: случайный вопрос из каждого раздела
+                </p>
+                <button class="btn btn-primary" onclick="startRandomTest()">
+                    🚀 Пробный тест
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📋 Тест по разделу</div>
+                <div class="section-list" id="test-section-list"></div>
+            </div>
+        </div>
+
+        <!-- Test Start -->
+        <div class="page" id="page-test-start">
+            <div class="question-card-container">
+                <div class="breadcrumb mb-24">
+                    <a onclick="cancelTestStart()">Тестирование</a>
+                    <span>/</span>
+                    <span>Настройка теста</span>
+                </div>
+
+                <div class="card test-start-form">
+                    <div class="card-title">⚙️ Параметры теста</div>
+                    
+                    <div class="form-group">
+                        <div class="form-label">Выбранный раздел</div>
+                        <div id="test-start-section" style="font-weight: 600;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-label">Дополнительные фильтры</div>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="filter-not-mastered" checked>
+                                <span>Только не усвоенные</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="filter-not-attempted">
+                                <span>Только не пройденные</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="color: var(--text-secondary);">
+                            Вопросов в тесте: <strong id="test-start-count">0</strong>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 24px;">
+                        <button class="btn btn-primary flex-1" onclick="startTest()">
+                            ▶️ Начать тест
+                        </button>
+                        <button class="btn btn-secondary" onclick="cancelTestStart()">
+                            Отмена
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Questions -->
+        <div class="page" id="page-test-questions">
+            <div class="test-toolbar">
+                <div class="test-stats">
+                    <div class="test-stat answered">
+                        <span>Отвечено:</span>
+                        <span class="test-stat-value" id="test-answered">0</span>
+                    </div>
+                    <div class="test-stat skipped">
+                        <span>Пропущено:</span>
+                        <span class="test-stat-value" id="test-skipped">0</span>
+                    </div>
+                </div>
+                <div style="margin-left: auto; display: flex; gap: 12px;">
+                    <button class="btn btn-success" onclick="finishTest()">✅ Завершить</button>
+                    <button class="btn btn-danger" onclick="confirmCancelTest()">✕ Отмена</button>
+                </div>
+            </div>
+
+            <div class="questions-toolbar">
+                <button class="filter-btn" data-filter="all" onclick="setTestFilter('all')">Все</button>
+                <button class="filter-btn" data-filter="answered" onclick="setTestFilter('answered')">Отвечено</button>
+                <button class="filter-btn" data-filter="skipped" onclick="setTestFilter('skipped')">Пропущено</button>
+                <span class="question-count" id="test-question-count">0 вопросов</span>
+            </div>
+
+            <div class="question-list" id="test-question-list"></div>
+        </div>
+
+        <!-- Test Question Card -->
+        <div class="page" id="page-test-card">
+            <div class="question-card-container">
+                <div class="test-toolbar" style="margin-bottom: 20px;">
+                    <div class="test-stats">
+                        <div class="test-stat answered">
+                            <span>Отвечено:</span>
+                            <span class="test-stat-value" id="test-card-answered">0</span>
+                        </div>
+                    </div>
+                    <div style="margin-left: auto; display: flex; gap: 12px;">
+                        <button class="btn btn-success" onclick="finishTest()">✅ Завершить</button>
+                        <button class="btn btn-danger" onclick="confirmCancelTest()">✕ Отмена</button>
+                    </div>
+                </div>
+
+                <div class="question-nav">
+                    <button class="nav-btn" onclick="goToPage('test-questions')" title="К списку">📋</button>
+                    <button class="nav-btn" onclick="navTestQuestion('first')" title="В начало">⏮</button>
+                    <button class="nav-btn" onclick="navTestQuestion('prev')" title="Предыдущий">←</button>
+                    <span class="nav-info" id="test-nav-info">1 / 10</span>
+                    <button class="nav-btn" onclick="navTestQuestion('next')" title="Следующий">→</button>
+                    <button class="nav-btn" onclick="navTestQuestion('last')" title="В конец">⏭</button>
+                    <div style="margin-left: auto;">
+                        <button class="btn btn-mastered btn-sm" id="test-mastered-btn" onclick="toggleTestMastered()">
+                            ✅ Усвоен
+                        </button>
+                    </div>
+                </div>
+
+                <div class="question-card" id="test-question-card"></div>
+            </div>
+        </div>
+
+        <!-- ==================== RESULT MODE ==================== -->
+        <!-- Result Home -->
+        <div class="page" id="page-result-home">
+            <div class="page-header">
+                <h1>📊 Результаты теста</h1>
+            </div>
+
+            <div id="result-content">
+                <div class="result-header" id="result-header">
+                    <div class="result-icon">📋</div>
+                    <div class="result-title">Нет результатов</div>
+                    <div class="result-subtitle">Пройдите тест, чтобы увидеть результаты</div>
+                </div>
+            </div>
+
+            <div class="text-center hidden" id="result-questions-btn-container">
+                <button class="btn btn-primary btn-lg" onclick="goToPage('result-questions')">
+                    📝 Посмотреть вопросы
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Questions -->
+        <div class="page" id="page-result-questions">
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <a onclick="goToPage('result-home')">Результаты</a>
+                    <span>/</span>
+                    <span>Вопросы</span>
+                </div>
+            </div>
+
+            <div class="questions-toolbar">
+                <button class="filter-btn active" data-filter="all" onclick="setResultFilter('all')">Все</button>
+                <button class="filter-btn" data-filter="correct" onclick="setResultFilter('correct')">✓ Верно</button>
+                <button class="filter-btn" data-filter="incorrect" onclick="setResultFilter('incorrect')">✗ Неверно</button>
+                <button class="filter-btn" data-filter="skipped" onclick="setResultFilter('skipped')">Пропущено</button>
+                <span class="question-count" id="result-question-count">0 вопросов</span>
+            </div>
+
+            <div class="question-list" id="result-question-list"></div>
+        </div>
+
+        <!-- Result Question Card -->
+        <div class="page" id="page-result-card">
+            <div class="question-card-container">
+                <div class="breadcrumb mb-24">
+                    <a onclick="goToPage('result-home')">Результаты</a>
+                    <span>/</span>
+                    <a onclick="goToPage('result-questions')">Вопросы</a>
+                    <span>/</span>
+                    <span>Карточка</span>
+                </div>
+
+                <div class="question-nav">
+                    <button class="nav-btn" onclick="goToPage('result-questions')" title="К списку">📋</button>
+                    <button class="nav-btn" onclick="navResultQuestion('first')" title="В начало">⏮</button>
+                    <button class="nav-btn" onclick="navResultQuestion('prev')" title="Предыдущий">←</button>
+                    <span class="nav-info" id="result-nav-info">1 / 10</span>
+                    <button class="nav-btn" onclick="navResultQuestion('next')" title="Следующий">→</button>
+                    <button class="nav-btn" onclick="navResultQuestion('last')" title="В конец">⏭</button>
+                    <div style="margin-left: auto;">
+                        <button class="btn btn-mastered btn-sm" id="result-mastered-btn" onclick="toggleResultMastered()">
+                            ✅ Усвоен
+                        </button>
+                    </div>
+                </div>
+
+                <div class="question-card" id="result-question-card"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTER PANEL -->
+    <div class="filter-panel" id="filter-panel">
+        <div class="filter-panel-header">
+            <div class="filter-panel-title">🔍 Фильтры</div>
+            <button class="filter-close" onclick="toggleFilterPanel()">×</button>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-section-title">Раздел</div>
+            <select class="filter-select" id="filter-section" style="width: 100%; padding: 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                <option value="">Все разделы</option>
+            </select>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-section-title">Статус</div>
+            <div class="checkbox-group">
+                <label class="filter-option">
+                    <input type="checkbox" id="filter-hide-mastered" checked>
+                    <span>Скрывать усвоенные</span>
+                </label>
+                <label class="filter-option">
+                    <input type="checkbox" id="filter-not-attempted-main">
+                    <span>Только непройденные</span>
+                </label>
+                <label class="filter-option">
+                    <input type="checkbox" id="filter-with-errors">
+                    <span>Только с ошибками</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-section-title">Поиск</div>
+            <input type="text" id="filter-search" placeholder="Поиск по тексту..." style="width: 100%; padding: 10px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; margin-top: 16px;" onclick="applyFilters()">
+            Применить
+        </button>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-title" id="modal-title">Подтверждение</div>
+            <div class="modal-text" id="modal-text">Вы уверены?</div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+                <button class="btn btn-danger" id="modal-confirm" onclick="confirmModal()">Да</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== STATE ====================
+        const state = {
+            currentMode: 'main',
+            currentPage: 'main-home',
+            currentExam: '',
+            
+            // Main mode
+            questions: [],
+            filteredQuestions: [],
+            currentQuestionIndex: 0,
+            mainSelectedAnswer: null,
+            mainChecked: false,
+            
+            // Test mode
+            testActive: false,
+            testSection: null,
+            testQuestions: [],
+            testAnswers: {}, // {questionId: answerId}
+            testFilter: 'all',
+            testCurrentIndex: 0,
+            testStartTime: null,
+            
+            // Result mode
+            lastResult: null,
+            resultFilter: 'all',
+            resultCurrentIndex: 0,
+            
+            // Filters
+            filters: {
+                section: '',
+                hideMastered: true,
+                notAttempted: false,
+                withErrors: false,
+                search: ''
+            },
+            
+            // Stats
+            stats: {},
+            sections: []
+        };
+
+        let modalCallback = null;
+
+        // ==================== AUTHENTICATION ====================
+        let authenticated = false;
+
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                authenticated = data.authenticated;
+                
+                if (authenticated) {
+                    showApp();
+                    // Загружаем данные приложения если пользователь уже авторизован
+                    await initializeApp();
+                } else {
+                    showLogin();
+                }
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('login-container').classList.remove('hidden');
+            document.getElementById('app-content').classList.add('hidden');
+            document.getElementById('logout-btn').classList.add('hidden');
+        }
+
+        function showApp() {
+            document.getElementById('login-container').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
+            document.getElementById('logout-btn').classList.remove('hidden');
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const secretInput = document.getElementById('secret-input');
+            const loginBtn = document.getElementById('login-btn');
+            const errorDiv = document.getElementById('login-error');
+            
+            const secret = secretInput.value.trim();
+            
+            if (!secret) {
+                errorDiv.textContent = 'Введите Secret';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            loginBtn.disabled = true;
+            errorDiv.classList.remove('show');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    credentials: 'include',
+                    body: JSON.stringify({secret: secret})
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.authenticated) {
+                    authenticated = true;
+                    showApp();
+                    await initializeApp();
+                } else {
+                    errorDiv.textContent = data.error || 'Ошибка авторизации';
+                    errorDiv.classList.add('show');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.textContent = 'Ошибка подключения к серверу';
+                errorDiv.classList.add('show');
+            } finally {
+                loginBtn.disabled = false;
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                authenticated = false;
+                showLogin();
+                document.getElementById('secret-input').value = '';
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        async function initializeApp() {
+            await loadExams();
+            await loadStatistics();
+            await loadQuestions();
+            renderSections();
+        }
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuthStatus();
+            
+            // Event listeners for filters
+            document.getElementById('filter-section').addEventListener('change', () => {
+                state.filters.section = document.getElementById('filter-section').value;
+            });
+            document.getElementById('filter-search').addEventListener('input', debounce(() => {
+                state.filters.search = document.getElementById('filter-search').value;
+            }, 300));
+        });
+
+        function debounce(func, wait) {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func(...args), wait);
+            };
+        }
+
+        // ==================== API ====================
+        async function apiFetch(url, options = {}) {
+            const response = await fetch(url, {
+                ...options,
+                credentials: 'include'
+            });
+            
+            if (response.status === 401) {
+                authenticated = false;
+                showLogin();
+                throw new Error('Требуется авторизация');
+            }
+            
+            return response;
+        }
+
+        async function loadExams() {
+            const response = await apiFetch('/api/exams');
+            const data = await response.json();
+            state.currentExam = data.current_exam;
+            
+            const select = document.getElementById('exam-select');
+            select.innerHTML = data.exams.map(exam => 
+                `<option value="${exam}" ${exam === state.currentExam ? 'selected' : ''}>${exam}</option>`
+            ).join('');
+        }
+
+        async function switchExam() {
+            const examName = document.getElementById('exam-select').value;
+            await apiFetch('/api/exam/switch', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({exam_name: examName})
+            });
+            state.currentExam = examName;
+            state.lastResult = null;
+            await loadStatistics();
+            await loadQuestions();
+            renderSections();
+            if (state.currentMode === 'main') goToPage('main-home');
+        }
+
+        async function loadStatistics() {
+            const response = await apiFetch('/api/statistics');
+            const data = await response.json();
+            state.stats = data.overall;
+            state.sections = data.sections;
+            
+            document.getElementById('stat-total').textContent = data.overall.total_verified;
+            document.getElementById('stat-mastered').textContent = data.overall.mastered;
+            document.getElementById('stat-attempted').textContent = data.overall.attempted;
+            document.getElementById('stat-accuracy').textContent = `${data.overall.accuracy}%`;
+            
+            document.getElementById('test-stat-total').textContent = data.overall.total_verified;
+            document.getElementById('test-stat-mastered').textContent = data.overall.mastered;
+        }
+
+        async function loadQuestions() {
+            const params = new URLSearchParams({
+                hide_mastered: state.filters.hideMastered,
+                section: state.filters.section,
+                status: state.filters.notAttempted ? 'not_attempted' : (state.filters.withErrors ? 'with_errors' : ''),
+                search: state.filters.search
+            });
+            
+            const response = await apiFetch(`/api/questions?${params}`);
+            const data = await response.json();
+            state.questions = data.questions;
+            state.filteredQuestions = data.questions;
+            
+            renderQuestionList();
+        }
+
+        async function toggleMastered(questionId, mastered) {
+            await apiFetch(`/api/question/${questionId}/mastered`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({mastered})
+            });
+            await loadStatistics();
+        }
+
+        // ==================== MODE SWITCHING ====================
+        function switchMode(mode) {
+            if (state.testActive && mode !== 'test') {
+                showModal('Прервать тестирование?', 'Текущий прогресс теста будет потерян.', () => {
+                    state.testActive = false;
+                    doSwitchMode(mode);
+                });
+                return;
+            }
+            doSwitchMode(mode);
+        }
+
+        function doSwitchMode(mode) {
+            state.currentMode = mode;
+            
+            document.querySelectorAll('.mode-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.mode === mode);
+            });
+            
+            const homePages = {
+                'main': 'main-home',
+                'test': 'test-home',
+                'result': 'result-home'
+            };
+            
+            goToPage(homePages[mode]);
+        }
+
+        // ==================== PAGE NAVIGATION ====================
+        function goToPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page-${pageId}`).classList.add('active');
+            state.currentPage = pageId;
+            
+            // Reset states on page switch
+            if (pageId === 'main-questions') {
+                renderQuestionList();
+            } else if (pageId === 'result-questions') {
+                renderResultQuestionList();
+            } else if (pageId === 'result-home') {
+                renderResultHome();
+            }
+        }
+
+        // ==================== RENDER FUNCTIONS ====================
+        function renderSections() {
+            const html = state.sections.map(section => `
+                <div class="section-item" onclick="goToSectionQuestions(${section.section_number})">
+                    <div class="section-name">${section.section_number}. ${section.name}</div>
+                    <div class="section-progress">
+                        <div class="section-progress-bar" style="width: ${section.mastered_percent}%"></div>
+                    </div>
+                    <div class="section-stats">${section.mastered}/${section.total}</div>
+                    <div class="section-action">
+                        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); startSectionTest(${section.section_number}, '${section.name}')">
+                            Тест
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('section-list').innerHTML = html;
+            document.getElementById('test-section-list').innerHTML = state.sections.map(section => `
+                <div class="section-item" onclick="startSectionTest(${section.section_number}, '${section.name}')">
+                    <div class="section-name">${section.section_number}. ${section.name}</div>
+                    <div class="section-progress">
+                        <div class="section-progress-bar" style="width: ${section.mastered_percent}%"></div>
+                    </div>
+                    <div class="section-stats">${section.mastered}/${section.total}</div>
+                    <button class="btn btn-sm btn-primary section-action">Начать</button>
+                </div>
+            `).join('');
+            
+            // Update filter section dropdown
+            const filterSection = document.getElementById('filter-section');
+            filterSection.innerHTML = '<option value="">Все разделы</option>' + 
+                state.sections.map(s => `<option value="${s.section_number}">${s.section_number}. ${s.name}</option>`).join('');
+        }
+
+        function renderQuestionList() {
+            const list = document.getElementById('main-question-list');
+            const count = document.getElementById('main-question-count');
+            
+            count.textContent = `${state.filteredQuestions.length} вопросов`;
+            
+            list.innerHTML = state.filteredQuestions.map((q, idx) => {
+                const progress = q.progress || {};
+                return `
+                    <div class="question-item" onclick="openMainQuestion(${idx})">
+                        <div class="question-item-header">
+                            <span class="question-number">${q.question_number || q.id.slice(0,8)}</span>
+                        </div>
+                        <div class="question-text">${escapeHtml(q.text)}</div>
+                        <div class="question-meta">
+                            ${progress.mastered ? '<span class="badge badge-mastered">✓ Усвоен</span>' : ''}
+                            ${progress.attempts > 0 ? `<span class="badge badge-attempted">Попыток: ${progress.attempts}</span>` : ''}
+                            ${progress.attempts > 0 && progress.total_correct < progress.attempts ? '<span class="badge badge-error">Есть ошибки</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openMainQuestion(index) {
+            state.currentQuestionIndex = index;
+            state.mainSelectedAnswer = null;
+            state.mainChecked = false;
+            renderMainQuestionCard();
+            goToPage('main-card');
+        }
+
+        function renderMainQuestionCard() {
+            const q = state.filteredQuestions[state.currentQuestionIndex];
+            if (!q) return;
+            
+            const progress = q.progress || {};
+            const total = state.filteredQuestions.length;
+            
+            document.getElementById('main-nav-info').textContent = `${state.currentQuestionIndex + 1} / ${total}`;
+            
+            let answersHtml = q.answers.map(a => {
+                let cls = '';
+                if (state.mainChecked) {
+                    if (a.is_correct) cls = 'correct';
+                    else if (state.mainSelectedAnswer === a.id) cls = 'incorrect selected';
+                } else if (state.mainSelectedAnswer === a.id) {
+                    cls = 'selected';
+                }
+                
+                return `
+                    <div class="answer-item ${cls} ${state.mainChecked ? 'disabled' : ''}" 
+                         onclick="${state.mainChecked ? '' : `selectMainAnswer('${a.id}')`}">
+                        <div class="answer-radio"></div>
+                        <div class="answer-text">${escapeHtml(a.text)}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            let resultHtml = '';
+            if (state.mainChecked) {
+                const isCorrect = q.answers.find(a => a.id === state.mainSelectedAnswer)?.is_correct;
+                resultHtml = `
+                    <div class="question-result ${isCorrect ? 'correct' : 'incorrect'}">
+                        <div class="question-result-icon">${isCorrect ? '✓' : '✗'}</div>
+                        <div class="question-result-text">${isCorrect ? 'Правильно!' : 'Неправильно'}</div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('main-question-card').innerHTML = `
+                <div class="question-card-header">
+                    <div>
+                        <div class="question-card-number">${q.question_number || q.id.slice(0,8)}</div>
+                        <div class="question-card-text">${escapeHtml(q.text)}</div>
+                    </div>
+                    ${progress.mastered ? '<span class="badge badge-mastered">✓ Усвоен</span>' : ''}
+                </div>
+                
+                <div class="answers-container">
+                    <div class="answers-title">Варианты ответа:</div>
+                    ${answersHtml}
+                </div>
+                
+                ${resultHtml}
+                
+                <div class="question-actions">
+                    ${!state.mainChecked ? `
+                        <button class="btn btn-primary" onclick="checkMainAnswer()" ${!state.mainSelectedAnswer ? 'disabled' : ''}>
+                            ✓ Проверить
+                        </button>
+                    ` : `
+                        <button class="btn btn-secondary" onclick="resetMainAnswer()">
+                            🔄 Заново
+                        </button>
+                    `}
+                    <button class="btn btn-mastered ${progress.mastered ? 'active' : ''}" onclick="toggleMainMastered()">
+                        ${progress.mastered ? '🔄 Снять "Усвоен"' : '✅ Усвоен'}
+                    </button>
+                </div>
+            `;
+        }
+
+        function selectMainAnswer(answerId) {
+            state.mainSelectedAnswer = answerId;
+            renderMainQuestionCard();
+        }
+
+        async function checkMainAnswer() {
+            if (!state.mainSelectedAnswer) return;
+            
+            const q = state.filteredQuestions[state.currentQuestionIndex];
+            
+            // Mark as attempted (call API to update progress)
+            await apiFetch(`/api/question/${q.id}/check`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({selected_answers: [state.mainSelectedAnswer], dont_know: false})
+            });
+            
+            // Get correct answers from server response (with show_answers=true)
+            const response = await apiFetch(`/api/question/${q.id}?show_answers=true`);
+            const data = await response.json();
+            q.answers = data.question.answers;
+            q.progress = data.question.progress;
+            
+            state.mainChecked = true;
+            renderMainQuestionCard();
+            await loadStatistics();
+        }
+
+        function resetMainAnswer() {
+            state.mainSelectedAnswer = null;
+            state.mainChecked = false;
+            
+            // Hide correct answers again
+            const q = state.filteredQuestions[state.currentQuestionIndex];
+            q.answers.forEach(a => { a.is_correct = false; });
+            
+            renderMainQuestionCard();
+        }
+
+        async function toggleMainMastered() {
+            const q = state.filteredQuestions[state.currentQuestionIndex];
+            const progress = q.progress || {};
+            await toggleMastered(q.id, !progress.mastered);
+            q.progress.mastered = !progress.mastered;
+            renderMainQuestionCard();
+        }
+
+        function navQuestion(dir) {
+            const total = state.filteredQuestions.length;
+            if (dir === 'first') state.currentQuestionIndex = 0;
+            else if (dir === 'last') state.currentQuestionIndex = total - 1;
+            else if (dir === 'prev' && state.currentQuestionIndex > 0) state.currentQuestionIndex--;
+            else if (dir === 'next' && state.currentQuestionIndex < total - 1) state.currentQuestionIndex++;
+            
+            state.mainSelectedAnswer = null;
+            state.mainChecked = false;
+            renderMainQuestionCard();
+        }
+
+        function goToSectionQuestions(sectionNum) {
+            state.filters.section = sectionNum.toString();
+            document.getElementById('filter-section').value = sectionNum;
+            applyFilters();
+            goToPage('main-questions');
+        }
+
+        // ==================== FILTER PANEL ====================
+        function toggleFilterPanel() {
+            document.getElementById('filter-panel').classList.toggle('active');
+        }
+
+        async function applyFilters() {
+            state.filters.hideMastered = document.getElementById('filter-hide-mastered').checked;
+            state.filters.notAttempted = document.getElementById('filter-not-attempted-main').checked;
+            state.filters.withErrors = document.getElementById('filter-with-errors').checked;
+            state.filters.section = document.getElementById('filter-section').value;
+            state.filters.search = document.getElementById('filter-search').value;
+            
+            await loadQuestions();
+            toggleFilterPanel();
+        }
+
+        // ==================== TEST MODE ====================
+        function startRandomTest() {
+            state.testSection = null;
+            goToPage('test-start');
+            document.getElementById('test-start-section').textContent = 'Пробный тест (по одному вопросу из каждого раздела)';
+            updateTestStartCount();
+        }
+
+        function startSectionTest(sectionNum, sectionName) {
+            state.testSection = sectionNum;
+            switchMode('test');
+            goToPage('test-start');
+            document.getElementById('test-start-section').textContent = `${sectionNum}. ${sectionName}`;
+            updateTestStartCount();
+        }
+
+        async function updateTestStartCount() {
+            const notMastered = document.getElementById('filter-not-mastered').checked;
+            const notAttempted = document.getElementById('filter-not-attempted').checked;
+            
+            const params = new URLSearchParams({
+                hide_mastered: notMastered,
+                section: state.testSection || '',
+                status: notAttempted ? 'not_attempted' : ''
+            });
+            
+            const response = await apiFetch(`/api/questions?${params}`);
+            const data = await response.json();
+            
+            let count = data.questions.length;
+            if (state.testSection === null) {
+                // Random test - one per section
+                count = Math.min(count, state.sections.length);
+            }
+            
+            document.getElementById('test-start-count').textContent = count;
+        }
+
+        document.getElementById('filter-not-mastered')?.addEventListener('change', updateTestStartCount);
+        document.getElementById('filter-not-attempted')?.addEventListener('change', updateTestStartCount);
+
+        async function startTest() {
+            const notMastered = document.getElementById('filter-not-mastered').checked;
+            const notAttempted = document.getElementById('filter-not-attempted').checked;
+            
+            const params = new URLSearchParams({
+                hide_mastered: notMastered,
+                section: state.testSection || '',
+                status: notAttempted ? 'not_attempted' : ''
+            });
+            
+            const response = await apiFetch(`/api/questions?${params}`);
+            const data = await response.json();
+            
+            let questions = data.questions;
+            
+            // For random test, pick one from each section
+            if (state.testSection === null) {
+                const bySection = {};
+                questions.forEach(q => {
+                    const sec = q.section_number || 0;
+                    if (!bySection[sec]) bySection[sec] = [];
+                    bySection[sec].push(q);
+                });
+                
+                questions = Object.values(bySection).map(qs => 
+                    qs[Math.floor(Math.random() * qs.length)]
+                );
+            }
+            
+            if (questions.length === 0) {
+                alert('Нет вопросов для теста с выбранными фильтрами');
+                return;
+            }
+            
+            state.testQuestions = questions;
+            state.testAnswers = {};
+            state.testActive = true;
+            state.testStartTime = new Date();
+            state.testCurrentIndex = 0;
+            state.testFilter = 'all';
+            
+            goToPage('test-questions');
+            renderTestQuestionList();
+        }
+
+        function cancelTestStart() {
+            goToPage('test-home');
+        }
+
+        function confirmCancelTest() {
+            showModal('Прервать тестирование?', 'Текущий прогресс теста будет потерян.', () => {
+                state.testActive = false;
+                goToPage('test-home');
+            });
+        }
+
+        function renderTestQuestionList() {
+            let questions = state.testQuestions;
+            
+            if (state.testFilter === 'answered') {
+                questions = questions.filter(q => state.testAnswers[q.id]);
+            } else if (state.testFilter === 'skipped') {
+                questions = questions.filter(q => !state.testAnswers[q.id]);
+            }
+            
+            const answered = Object.keys(state.testAnswers).length;
+            const skipped = state.testQuestions.length - answered;
+            
+            document.getElementById('test-answered').textContent = answered;
+            document.getElementById('test-skipped').textContent = skipped;
+            document.getElementById('test-question-count').textContent = `${questions.length} вопросов`;
+            
+            // Update filter buttons
+            document.querySelectorAll('#page-test-questions .filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === state.testFilter);
+            });
+            
+            document.getElementById('test-question-list').innerHTML = questions.map((q, idx) => {
+                const globalIdx = state.testQuestions.indexOf(q);
+                const hasAnswer = state.testAnswers[q.id];
+                
+                return `
+                    <div class="question-item ${globalIdx === state.testCurrentIndex ? 'active' : ''}" 
+                         onclick="openTestQuestion(${globalIdx})">
+                        <div class="question-item-header">
+                            <span class="question-number">${q.question_number || q.id.slice(0,8)}</span>
+                            ${hasAnswer ? '<span class="badge badge-correct">✓ Отвечен</span>' : '<span class="badge badge-skipped">○ Пропущен</span>'}
+                        </div>
+                        <div class="question-text">${escapeHtml(q.text)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setTestFilter(filter) {
+            state.testFilter = filter;
+            renderTestQuestionList();
+        }
+
+        function openTestQuestion(index) {
+            state.testCurrentIndex = index;
+            renderTestQuestionCard();
+            goToPage('test-card');
+        }
+
+        function renderTestQuestionCard() {
+            const q = state.testQuestions[state.testCurrentIndex];
+            if (!q) return;
+            
+            const progress = q.progress || {};
+            const selectedAnswer = state.testAnswers[q.id];
+            const total = state.testQuestions.length;
+            const answered = Object.keys(state.testAnswers).length;
+            
+            document.getElementById('test-nav-info').textContent = `${state.testCurrentIndex + 1} / ${total}`;
+            document.getElementById('test-card-answered').textContent = answered;
+            
+            // Update mastered button
+            const masteredBtn = document.getElementById('test-mastered-btn');
+            masteredBtn.classList.toggle('active', progress.mastered);
+            masteredBtn.innerHTML = progress.mastered ? '🔄 Снять "Усвоен"' : '✅ Усвоен';
+            
+            let answersHtml = q.answers.map(a => `
+                <div class="answer-item ${selectedAnswer === a.id ? 'selected' : ''}" 
+                     onclick="selectTestAnswer('${a.id}')">
+                    <div class="answer-radio"></div>
+                    <div class="answer-text">${escapeHtml(a.text)}</div>
+                </div>
+            `).join('');
+            
+            document.getElementById('test-question-card').innerHTML = `
+                <div class="question-card-header">
+                    <div>
+                        <div class="question-card-number">${q.question_number || q.id.slice(0,8)}</div>
+                        <div class="question-card-text">${escapeHtml(q.text)}</div>
+                    </div>
+                </div>
+                
+                <div class="answers-container">
+                    <div class="answers-title">Выберите ответ:</div>
+                    ${answersHtml}
+                </div>
+            `;
+        }
+
+        function selectTestAnswer(answerId) {
+            const q = state.testQuestions[state.testCurrentIndex];
+            state.testAnswers[q.id] = answerId;
+            renderTestQuestionCard();
+            renderTestQuestionList();
+        }
+
+        async function toggleTestMastered() {
+            const q = state.testQuestions[state.testCurrentIndex];
+            const progress = q.progress || {};
+            await toggleMastered(q.id, !progress.mastered);
+            q.progress = q.progress || {};
+            q.progress.mastered = !progress.mastered;
+            renderTestQuestionCard();
+        }
+
+        function navTestQuestion(dir) {
+            const total = state.testQuestions.length;
+            if (dir === 'first') state.testCurrentIndex = 0;
+            else if (dir === 'last') state.testCurrentIndex = total - 1;
+            else if (dir === 'prev' && state.testCurrentIndex > 0) state.testCurrentIndex--;
+            else if (dir === 'next' && state.testCurrentIndex < total - 1) state.testCurrentIndex++;
+            
+            renderTestQuestionCard();
+        }
+
+        async function finishTest() {
+            const answersToCheck = {};
+            state.testQuestions.forEach(q => {
+                if (state.testAnswers[q.id]) {
+                    answersToCheck[q.id] = {selected: [state.testAnswers[q.id]], dont_know: false};
+                }
+            });
+            
+            const response = await apiFetch('/api/session/results', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({answers: answersToCheck})
+            });
+            const data = await response.json();
+            
+            state.lastResult = {
+                questions: state.testQuestions,
+                answers: state.testAnswers,
+                results: data.results,
+                summary: data.summary,
+                startTime: state.testStartTime,
+                duration: Math.round((new Date() - state.testStartTime) / 1000),
+                section: state.testSection
+            };
+            
+            state.testActive = false;
+            
+            // Show result badge
+            document.getElementById('result-badge').classList.remove('hidden');
+            
+            await loadStatistics();
+            switchMode('result');
+        }
+
+        // ==================== RESULT MODE ====================
+        function renderResultHome() {
+            if (!state.lastResult) {
+                document.getElementById('result-header').innerHTML = `
+                    <div class="result-icon">📋</div>
+                    <div class="result-title">Нет результатов</div>
+                    <div class="result-subtitle">Пройдите тест, чтобы увидеть результаты</div>
+                `;
+                document.getElementById('result-questions-btn-container').classList.add('hidden');
+                return;
+            }
+            
+            const r = state.lastResult;
+            const correct = r.summary.total_correct;
+            const total = r.summary.total_answered + (r.questions.length - Object.keys(r.answers).length);
+            const accuracy = r.summary.accuracy;
+            const duration = r.duration;
+            const mins = Math.floor(duration / 60);
+            const secs = duration % 60;
+            
+            const isGood = accuracy >= 70;
+            
+            document.getElementById('result-header').innerHTML = `
+                <div class="result-icon">${isGood ? '🎉' : '📚'}</div>
+                <div class="result-title" style="color: ${isGood ? 'var(--accent-green)' : 'var(--accent-orange)'}">
+                    ${accuracy}% правильных
+                </div>
+                <div class="result-subtitle">
+                    ${r.section ? `Раздел ${r.section}` : 'Пробный тест'} • 
+                    ${r.startTime.toLocaleString()}
+                </div>
+                
+                <div class="result-details">
+                    <div class="result-detail">
+                        <div class="result-detail-value" style="color: var(--accent-green)">${correct}</div>
+                        <div class="result-detail-label">Правильных</div>
+                    </div>
+                    <div class="result-detail">
+                        <div class="result-detail-value" style="color: var(--accent-red)">${r.summary.total_answered - correct}</div>
+                        <div class="result-detail-label">Неправильных</div>
+                    </div>
+                    <div class="result-detail">
+                        <div class="result-detail-value" style="color: var(--text-muted)">${r.questions.length - Object.keys(r.answers).length}</div>
+                        <div class="result-detail-label">Пропущено</div>
+                    </div>
+                    <div class="result-detail">
+                        <div class="result-detail-value">${mins}:${secs.toString().padStart(2,'0')}</div>
+                        <div class="result-detail-label">Время</div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('result-questions-btn-container').classList.remove('hidden');
+        }
+
+        function renderResultQuestionList() {
+            if (!state.lastResult) return;
+            
+            let questions = state.lastResult.questions.map(q => {
+                const result = state.lastResult.results.find(r => r.question.id === q.id);
+                return {...q, result};
+            });
+            
+            if (state.resultFilter === 'correct') {
+                questions = questions.filter(q => q.result?.is_correct);
+            } else if (state.resultFilter === 'incorrect') {
+                questions = questions.filter(q => q.result && !q.result.is_correct);
+            } else if (state.resultFilter === 'skipped') {
+                questions = questions.filter(q => !state.lastResult.answers[q.id]);
+            }
+            
+            document.getElementById('result-question-count').textContent = `${questions.length} вопросов`;
+            
+            // Update filter buttons
+            document.querySelectorAll('#page-result-questions .filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === state.resultFilter);
+            });
+            
+            document.getElementById('result-question-list').innerHTML = questions.map((q, idx) => {
+                const globalIdx = state.lastResult.questions.indexOf(q);
+                const hasAnswer = state.lastResult.answers[q.id];
+                const isCorrect = q.result?.is_correct;
+                
+                let badge = '';
+                if (!hasAnswer) badge = '<span class="badge badge-skipped">Пропущен</span>';
+                else if (isCorrect) badge = '<span class="badge badge-correct">✓ Верно</span>';
+                else badge = '<span class="badge badge-incorrect">✗ Неверно</span>';
+                
+                return `
+                    <div class="question-item" onclick="openResultQuestion(${globalIdx})">
+                        <div class="question-item-header">
+                            <span class="question-number">${q.question_number || q.id.slice(0,8)}</span>
+                            ${badge}
+                        </div>
+                        <div class="question-text">${escapeHtml(q.text)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setResultFilter(filter) {
+            state.resultFilter = filter;
+            renderResultQuestionList();
+        }
+
+        function openResultQuestion(index) {
+            state.resultCurrentIndex = index;
+            renderResultQuestionCard();
+            goToPage('result-card');
+        }
+
+        function renderResultQuestionCard() {
+            const q = state.lastResult.questions[state.resultCurrentIndex];
+            if (!q) return;
+            
+            const result = state.lastResult.results.find(r => r.question.id === q.id);
+            const selectedAnswer = state.lastResult.answers[q.id];
+            const correctAnswers = result?.correct_answers || [];
+            const progress = result?.progress || q.progress || {};
+            const total = state.lastResult.questions.length;
+            
+            document.getElementById('result-nav-info').textContent = `${state.resultCurrentIndex + 1} / ${total}`;
+            
+            // Update mastered button
+            const masteredBtn = document.getElementById('result-mastered-btn');
+            masteredBtn.classList.toggle('active', progress.mastered);
+            masteredBtn.innerHTML = progress.mastered ? '🔄 Снять "Усвоен"' : '✅ Усвоен';
+            
+            let answersHtml = q.answers.map(a => {
+                let cls = '';
+                if (correctAnswers.includes(a.id)) cls = 'correct';
+                else if (selectedAnswer === a.id) cls = 'incorrect selected';
+                
+                return `
+                    <div class="answer-item ${cls} disabled">
+                        <div class="answer-radio"></div>
+                        <div class="answer-text">${escapeHtml(a.text)}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            let resultHtml = '';
+            if (result) {
+                resultHtml = `
+                    <div class="question-result ${result.is_correct ? 'correct' : 'incorrect'}">
+                        <div class="question-result-icon">${result.is_correct ? '✓' : '✗'}</div>
+                        <div class="question-result-text">${result.is_correct ? 'Правильно!' : 'Неправильно'}</div>
+                    </div>
+                `;
+            } else {
+                resultHtml = `
+                    <div class="question-result" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                        <div class="question-result-icon" style="opacity: 0.5;">⊘</div>
+                        <div class="question-result-text" style="color: var(--text-muted);">Пропущен</div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('result-question-card').innerHTML = `
+                <div class="question-card-header">
+                    <div>
+                        <div class="question-card-number">${q.question_number || q.id.slice(0,8)}</div>
+                        <div class="question-card-text">${escapeHtml(q.text)}</div>
+                    </div>
+                </div>
+                
+                <div class="answers-container">
+                    <div class="answers-title">Ответы:</div>
+                    ${answersHtml}
+                </div>
+                
+                ${resultHtml}
+            `;
+        }
+
+        async function toggleResultMastered() {
+            const q = state.lastResult.questions[state.resultCurrentIndex];
+            const result = state.lastResult.results.find(r => r.question.id === q.id);
+            const progress = result?.progress || q.progress || {};
+            await toggleMastered(q.id, !progress.mastered);
+            
+            if (result) result.progress.mastered = !progress.mastered;
+            else q.progress = {mastered: !progress.mastered};
+            
+            renderResultQuestionCard();
+        }
+
+        function navResultQuestion(dir) {
+            const total = state.lastResult.questions.length;
+            if (dir === 'first') state.resultCurrentIndex = 0;
+            else if (dir === 'last') state.resultCurrentIndex = total - 1;
+            else if (dir === 'prev' && state.resultCurrentIndex > 0) state.resultCurrentIndex--;
+            else if (dir === 'next' && state.resultCurrentIndex < total - 1) state.resultCurrentIndex++;
+            
+            renderResultQuestionCard();
+        }
+
+        // ==================== MODAL ====================
+        function showModal(title, text, callback) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-text').textContent = text;
+            document.getElementById('modal-overlay').classList.add('active');
+            modalCallback = callback;
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+            modalCallback = null;
+        }
+
+        function confirmModal() {
+            closeModal();
+            if (modalCallback) modalCallback();
+        }
+
+        // ==================== UTILITIES ====================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

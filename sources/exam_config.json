@@ -1,0 +1,15 @@
+{
+  "exams": [
+    {
+      "name": "1С:Руководитель проекта",
+      "file": "sources/rp_exam_questions.json",
+      "description": "Экзамен по управлению проектами в 1С"
+    },
+    {
+      "name": "Основы менеджмента",
+      "file": "sources/osnovy_exam_questions.json",
+      "description": "Экзамен по основам менеджмента"
+    }
+  ]
+}
+
