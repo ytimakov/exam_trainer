@@ -25,8 +25,10 @@ logging.basicConfig(
 )
 
 # Конфигурация Secret
-SECRETS_CONFIG_FILE = "secrets_config.json"
-SECRETS_DIR = "secrets"
+# Определяем базовую директорию проекта
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SECRETS_CONFIG_FILE = os.path.join(BASE_DIR, "secrets_config.json")
+SECRETS_DIR = os.path.join(BASE_DIR, "secrets")
 
 # Инициализация банка вопросов
 current_exam_name = "1С:Руководитель проекта"

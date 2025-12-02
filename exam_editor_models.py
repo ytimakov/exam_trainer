@@ -100,7 +100,9 @@ class Question:
 class QuestionBank:
     """Банк вопросов для редактирования"""
     
-    CONFIG_FILE = "sources/exam_config.json"
+    # Определяем базовую директорию проекта
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    CONFIG_FILE = os.path.join(BASE_DIR, "sources", "exam_config.json")
     _exam_config = None  # Кэш конфигурации
     
     def __init__(self, exam_name: str = "1С:Руководитель проекта"):
@@ -139,12 +141,20 @@ class QuestionBank:
         config = cls._load_config()
         for exam in config.get("exams", []):
             if exam.get("name") == exam_name:
-                return exam.get("file", "")
+                file_path = exam.get("file", "")
+                # Если путь относительный, делаем его абсолютным
+                if not os.path.isabs(file_path):
+                    return os.path.join(cls.BASE_DIR, file_path)
+                return file_path
         # Если экзамен не найден, возвращаем первый доступный или значение по умолчанию
         exams = config.get("exams", [])
         if exams:
-            return exams[0].get("file", "sources/1c_exam_questions.json")
-        return "sources/1c_exam_questions.json"
+            file_path = exams[0].get("file", "sources/1c_exam_questions.json")
+            if not os.path.isabs(file_path):
+                return os.path.join(cls.BASE_DIR, file_path)
+            return file_path
+        default_path = os.path.join(cls.BASE_DIR, "sources", "1c_exam_questions.json")
+        return default_path
     
     def load_questions(self):
         """Загрузка вопросов текущего экзамена из файла"""
