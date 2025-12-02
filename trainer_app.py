@@ -30,12 +30,31 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SECRETS_CONFIG_FILE = os.path.join(BASE_DIR, "secrets_config.json")
 SECRETS_DIR = os.path.join(BASE_DIR, "secrets")
 
-# Инициализация банка вопросов
-current_exam_name = "1С:Руководитель проекта"
-question_bank = QuestionBank(current_exam_name)
-
 # Глобальный словарь для хранения экземпляров UserProgress по Secret
 user_progress_cache: Dict[str, 'UserProgress'] = {}
+
+# Кэш банков вопросов для каждого экзамена
+question_bank_cache: Dict[str, QuestionBank] = {}
+
+# Экзамен по умолчанию
+DEFAULT_EXAM_NAME = "1С:Руководитель проекта"
+
+
+def get_question_bank(exam_name: str) -> QuestionBank:
+    """Получение банка вопросов для экзамена (с кэшированием)"""
+    if exam_name not in question_bank_cache:
+        question_bank_cache[exam_name] = QuestionBank(exam_name)
+    return question_bank_cache[exam_name]
+
+
+def get_current_exam_name() -> str:
+    """Получение текущего экзамена из сессии пользователя"""
+    return session.get('current_exam', DEFAULT_EXAM_NAME)
+
+
+def set_current_exam_name(exam_name: str):
+    """Установка текущего экзамена в сессии пользователя"""
+    session['current_exam'] = exam_name
 
 
 def load_secrets():
@@ -338,7 +357,7 @@ def get_exams():
     return jsonify({
         "exams": exams,
         "exams_info": exams_info,
-        "current_exam": current_exam_name
+        "current_exam": get_current_exam_name()
     })
 
 
@@ -346,8 +365,6 @@ def get_exams():
 @require_auth
 def switch_exam():
     """Переключение на другой экзамен"""
-    global question_bank, current_exam_name
-    
     data = request.get_json()
     exam_name = data.get("exam_name")
     
@@ -358,8 +375,11 @@ def switch_exam():
         return jsonify({"error": f"Экзамен '{exam_name}' не найден"}), 404
     
     try:
-        question_bank.switch_exam(exam_name)
-        current_exam_name = exam_name
+        # Устанавливаем экзамен в сессии пользователя
+        set_current_exam_name(exam_name)
+        
+        # Получаем банк вопросов для этого экзамена
+        question_bank = get_question_bank(exam_name)
         
         return jsonify({
             "success": True,
@@ -376,6 +396,8 @@ def switch_exam():
 def get_questions():
     """Получение списка вопросов с подтверждёнными ответами"""
     user_progress = get_current_user_progress()
+    current_exam_name = get_current_exam_name()
+    question_bank = get_question_bank(current_exam_name)
     
     hide_mastered = request.args.get('hide_mastered', 'true').lower() == 'true'
     section_filter = request.args.get('section', '').strip()
@@ -441,6 +463,9 @@ def get_questions():
 @require_auth
 def get_sections():
     """Получение списка разделов"""
+    current_exam_name = get_current_exam_name()
+    question_bank = get_question_bank(current_exam_name)
+    
     # Только вопросы с подтверждёнными ответами
     verified_questions = [q for q in question_bank.questions 
                          if q.exam_name == current_exam_name and q.is_verified]
@@ -449,9 +474,10 @@ def get_sections():
     for q in verified_questions:
         if q.section_number:
             if q.section_number not in sections:
+                # Берём название секции напрямую из вопроса
                 sections[q.section_number] = {
                     "number": q.section_number,
-                    "name": question_bank.get_section_name(q.section_number, current_exam_name),
+                    "name": q.section_name or f"Раздел {q.section_number}",
                     "count": 0
                 }
             sections[q.section_number]["count"] += 1
@@ -465,6 +491,8 @@ def get_sections():
 def get_question(question_id):
     """Получение конкретного вопроса"""
     user_progress = get_current_user_progress()
+    current_exam_name = get_current_exam_name()
+    question_bank = get_question_bank(current_exam_name)
     
     question = question_bank.get_question_by_id(question_id)
     
@@ -494,6 +522,8 @@ def get_question(question_id):
 def check_answer(question_id):
     """Проверка ответа пользователя"""
     user_progress = get_current_user_progress()
+    current_exam_name = get_current_exam_name()
+    question_bank = get_question_bank(current_exam_name)
     
     question = question_bank.get_question_by_id(question_id)
     
@@ -533,6 +563,8 @@ def check_answer(question_id):
 def set_question_mastered(question_id):
     """Установка/снятие отметки 'Усвоен'"""
     user_progress = get_current_user_progress()
+    current_exam_name = get_current_exam_name()
+    question_bank = get_question_bank(current_exam_name)
     
     question = question_bank.get_question_by_id(question_id)
     
@@ -555,6 +587,8 @@ def set_question_mastered(question_id):
 def get_statistics():
     """Получение статистики по экзамену"""
     user_progress = get_current_user_progress()
+    current_exam_name = get_current_exam_name()
+    question_bank = get_question_bank(current_exam_name)
     
     verified_questions = [q for q in question_bank.questions 
                          if q.exam_name == current_exam_name and q.is_verified]
@@ -564,9 +598,16 @@ def get_statistics():
     stats = user_progress.get_exam_statistics(current_exam_name, verified_ids)
     section_stats = user_progress.get_section_statistics(current_exam_name, verified_questions)
     
-    # Добавляем названия разделов
+    # Добавляем названия разделов (берём из вопросов)
     for section in section_stats:
-        section["name"] = question_bank.get_section_name(section["section_number"], current_exam_name)
+        section_num = section["section_number"]
+        # Находим вопрос с таким номером секции и берём из него название
+        for q in verified_questions:
+            if q.section_number == section_num and q.section_name:
+                section["name"] = q.section_name
+                break
+        else:
+            section["name"] = f"Раздел {section_num}"
     
     return jsonify({
         "overall": stats,
@@ -579,6 +620,8 @@ def get_statistics():
 def start_session():
     """Начало сессии тестирования"""
     user_progress = get_current_user_progress()
+    current_exam_name = get_current_exam_name()
+    question_bank = get_question_bank(current_exam_name)
     
     data = request.get_json()
     question_ids = data.get("question_ids", [])
@@ -611,6 +654,8 @@ def start_session():
 def get_session_results():
     """Получение результатов сессии тестирования"""
     user_progress = get_current_user_progress()
+    current_exam_name = get_current_exam_name()
+    question_bank = get_question_bank(current_exam_name)
     
     data = request.get_json()
     answers = data.get("answers", {})  # {question_id: {selected: [], dont_know: bool}}
