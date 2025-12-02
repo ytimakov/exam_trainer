@@ -12,9 +12,20 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# ВАЖНО: SECRET_KEY должен быть установлен через переменную окружения!
+# Генерация: python -c "import secrets; print(secrets.token_hex(32))"
+_secret_key = os.environ.get('SECRET_KEY')
+if not _secret_key:
+    logging.warning("⚠️  SECRET_KEY не установлен! Используется небезопасный ключ для разработки.")
+    logging.warning("⚠️  Для продакшена установите: export SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))')")
+    _secret_key = 'dev-secret-key-UNSAFE-change-in-production'
+app.secret_key = _secret_key
+
 # Настройка постоянных сессий (30 дней)
 app.permanent_session_lifetime = timedelta(days=30)
+
+# CORS: в продакшене лучше указать конкретные домены
 CORS(app, supports_credentials=True)
 
 # Настройка логирования
@@ -35,6 +46,11 @@ user_progress_cache: Dict[str, 'UserProgress'] = {}
 
 # Кэш банков вопросов для каждого экзамена
 question_bank_cache: Dict[str, QuestionBank] = {}
+
+# Защита от брутфорса: {ip: {"attempts": int, "blocked_until": datetime}}
+login_attempts: Dict[str, Dict] = {}
+MAX_LOGIN_ATTEMPTS = 5
+BLOCK_DURATION_MINUTES = 15
 
 # Экзамен по умолчанию
 DEFAULT_EXAM_NAME = "1С:Руководитель проекта"
@@ -76,14 +92,21 @@ def is_valid_secret(secret: str) -> bool:
     if not secret:
         return False
     
+    # Защита от Path Traversal - secret должен быть простой строкой без спецсимволов
+    if not secret.isalnum() or len(secret) < 16 or len(secret) > 64:
+        return False
+    
+    # Проверяем, зарегистрирован ли Secret (проверяем СНАЧАЛА в списке, потом папку)
+    registered_secrets = load_secrets()
+    if secret not in registered_secrets:
+        return False
+    
     # Проверяем, существует ли папка для этого Secret
     secret_dir = os.path.join(SECRETS_DIR, secret)
     if not os.path.exists(secret_dir):
         return False
     
-    # Проверяем, зарегистрирован ли Secret
-    registered_secrets = load_secrets()
-    return secret in registered_secrets
+    return True
 
 
 def get_user_progress(secret: str) -> 'UserProgress':
@@ -324,15 +347,45 @@ def telegram_app():
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
-    """Авторизация по Secret"""
+    """Авторизация по Secret с защитой от брутфорса"""
+    client_ip = request.remote_addr or 'unknown'
+    
+    # Проверяем, не заблокирован ли IP
+    if client_ip in login_attempts:
+        attempt_info = login_attempts[client_ip]
+        if attempt_info.get("blocked_until"):
+            if datetime.now() < attempt_info["blocked_until"]:
+                remaining = (attempt_info["blocked_until"] - datetime.now()).seconds // 60
+                return jsonify({
+                    "error": f"Слишком много попыток. Попробуйте через {remaining + 1} мин.",
+                    "authenticated": False
+                }), 429
+            else:
+                # Блокировка истекла, сбрасываем
+                login_attempts[client_ip] = {"attempts": 0, "blocked_until": None}
+    
     data = request.get_json()
-    secret = data.get('secret', '').strip()
+    secret = data.get('secret', '').strip() if data else ''
     
     if not secret:
         return jsonify({"error": "Secret не указан", "authenticated": False}), 400
     
     if not is_valid_secret(secret):
+        # Увеличиваем счётчик неудачных попыток
+        if client_ip not in login_attempts:
+            login_attempts[client_ip] = {"attempts": 0, "blocked_until": None}
+        login_attempts[client_ip]["attempts"] += 1
+        
+        # Блокируем после MAX_LOGIN_ATTEMPTS неудачных попыток
+        if login_attempts[client_ip]["attempts"] >= MAX_LOGIN_ATTEMPTS:
+            login_attempts[client_ip]["blocked_until"] = datetime.now() + timedelta(minutes=BLOCK_DURATION_MINUTES)
+            logging.warning(f"IP {client_ip} заблокирован на {BLOCK_DURATION_MINUTES} мин после {MAX_LOGIN_ATTEMPTS} неудачных попыток")
+        
         return jsonify({"error": "Неверный Secret", "authenticated": False}), 401
+    
+    # Успешный вход - сбрасываем счётчик
+    if client_ip in login_attempts:
+        del login_attempts[client_ip]
     
     # Сохраняем Secret в сессии и делаем сессию постоянной
     session['secret'] = secret
@@ -743,7 +796,14 @@ if __name__ == '__main__':
     os.makedirs('static', exist_ok=True)
     os.makedirs(SECRETS_DIR, exist_ok=True)
     
-    # Запуск на всех интерфейсах (0.0.0.0) для доступа с мобильного устройства в локальной сети
-    # Для безопасности можно использовать host='127.0.0.1' если нужен только локальный доступ
-    app.run(debug=True, host='0.0.0.0', port=5002)
+    # ВАЖНО: debug=True только для локальной разработки!
+    # На продакшене (PythonAnywhere) debug отключен автоматически через WSGI
+    is_development = os.environ.get('FLASK_ENV') == 'development' or not os.environ.get('SECRET_KEY')
+    
+    if is_development:
+        logging.info("🔧 Режим разработки: debug=True, host=0.0.0.0")
+        app.run(debug=True, host='0.0.0.0', port=5002)
+    else:
+        logging.info("🚀 Продакшен режим: debug=False")
+        app.run(debug=False, host='127.0.0.1', port=5002)
 
