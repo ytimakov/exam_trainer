@@ -1535,6 +1535,7 @@
     <script>
         // ==================== STATE ====================
         const state = {
+            sectionStats: [], // Статистика по разделам из /api/statistics
             currentMode: 'main',
             currentPage: 'main-home',
             currentExam: '',
@@ -1670,11 +1671,27 @@
             }
         }
 
+        async function loadSections() {
+            try {
+                const response = await apiFetch('/api/sections');
+                const data = await response.json();
+                // Нормализуем формат разделов: добавляем оба поля для совместимости
+                state.sections = data.sections.map(s => ({
+                    ...s,
+                    number: s.number !== undefined ? s.number : s.section_number,
+                    section_number: s.section_number !== undefined ? s.section_number : s.number
+                }));
+                renderSections();
+            } catch (error) {
+                console.error('Error loading sections:', error);
+            }
+        }
+
         async function initializeApp() {
             await loadExams();
             await loadStatistics();
+            await loadSections(); // Загружаем разделы отдельно
             await loadQuestions();
-            renderSections();
         }
 
         // ==================== INITIALIZATION ====================
@@ -1735,8 +1752,8 @@
             state.currentExam = examName;
             state.lastResult = null;
             await loadStatistics();
+            await loadSections(); // Загружаем разделы отдельно
             await loadQuestions();
-            renderSections();
             if (state.currentMode === 'main') goToPage('main-home');
         }
 
@@ -1744,7 +1761,12 @@
             const response = await apiFetch('/api/statistics');
             const data = await response.json();
             state.stats = data.overall;
-            state.sections = data.sections;
+            // Сохраняем статистику по разделам отдельно, нормализуем формат
+            state.sectionStats = (data.sections || []).map(s => ({
+                ...s,
+                number: s.number !== undefined ? s.number : s.section_number,
+                section_number: s.section_number !== undefined ? s.section_number : s.number
+            }));
             
             document.getElementById('stat-total').textContent = data.overall.total_verified;
             document.getElementById('stat-mastered').textContent = data.overall.mastered;
@@ -1826,37 +1848,71 @@
 
         // ==================== RENDER FUNCTIONS ====================
         function renderSections() {
-            const html = state.sections.map(section => `
-                <div class="section-item" onclick="goToSectionQuestions(${section.section_number})">
-                    <div class="section-name">${section.section_number}. ${section.name}</div>
+            // Объединяем данные разделов с статистикой
+            const sectionsWithStats = state.sections.map(section => {
+                const sectionNum = section.number || section.section_number;
+                // Находим статистику для этого раздела
+                const stats = state.sectionStats?.find(s => 
+                    (s.number || s.section_number) === sectionNum
+                ) || {};
+                
+                return {
+                    ...section,
+                    ...stats,
+                    number: sectionNum,
+                    section_number: sectionNum,
+                    mastered: stats.mastered || 0,
+                    total: stats.total || section.count || 0,
+                    mastered_percent: stats.mastered_percent || 0
+                };
+            });
+            
+            const html = sectionsWithStats.map(section => {
+                const sectionNum = section.number || section.section_number;
+                const sectionName = section.name || '';
+                // Экранируем кавычки в названии для использования в JavaScript
+                const escapedName = sectionName.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                return `
+                <div class="section-item" onclick="goToSectionQuestions(${sectionNum})">
+                    <div class="section-name">${sectionNum}. ${sectionName}</div>
                     <div class="section-progress">
-                        <div class="section-progress-bar" style="width: ${section.mastered_percent}%"></div>
+                        <div class="section-progress-bar" style="width: ${section.mastered_percent || 0}%"></div>
                     </div>
-                    <div class="section-stats">${section.mastered}/${section.total}</div>
+                    <div class="section-stats">${section.mastered || 0}/${section.total || 0}</div>
                     <div class="section-action">
-                        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); startSectionTest(${section.section_number}, '${section.name}')">
+                        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); startSectionTest(${sectionNum}, '${escapedName}')">
                             Тест
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             
             document.getElementById('section-list').innerHTML = html;
-            document.getElementById('test-section-list').innerHTML = state.sections.map(section => `
-                <div class="section-item" onclick="startSectionTest(${section.section_number}, '${section.name}')">
-                    <div class="section-name">${section.section_number}. ${section.name}</div>
+            document.getElementById('test-section-list').innerHTML = sectionsWithStats.map(section => {
+                const sectionNum = section.number || section.section_number;
+                const sectionName = section.name || '';
+                // Экранируем кавычки в названии для использования в JavaScript
+                const escapedName = sectionName.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                return `
+                <div class="section-item" onclick="startSectionTest(${sectionNum}, '${escapedName}')">
+                    <div class="section-name">${sectionNum}. ${sectionName}</div>
                     <div class="section-progress">
-                        <div class="section-progress-bar" style="width: ${section.mastered_percent}%"></div>
+                        <div class="section-progress-bar" style="width: ${section.mastered_percent || 0}%"></div>
                     </div>
-                    <div class="section-stats">${section.mastered}/${section.total}</div>
+                    <div class="section-stats">${section.mastered || 0}/${section.total || 0}</div>
                     <button class="btn btn-sm btn-primary section-action">Начать</button>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             
             // Update filter section dropdown
             const filterSection = document.getElementById('filter-section');
             filterSection.innerHTML = '<option value="">Все разделы</option>' + 
-                state.sections.map(s => `<option value="${s.section_number}">${s.section_number}. ${s.name}</option>`).join('');
+                state.sections.map(s => {
+                    const sectionNum = s.number || s.section_number;
+                    return `<option value="${sectionNum}">${sectionNum}. ${s.name || ''}</option>`;
+                }).join('');
         }
 
         function renderQuestionList() {
@@ -2550,8 +2606,11 @@
         }
 
         function confirmModal() {
+            // Сохраняем callback перед закрытием модального окна
+            const callback = modalCallback;
             closeModal();
-            if (modalCallback) modalCallback();
+            // Вызываем callback после закрытия модального окна
+            if (callback) callback();
         }
 
         // ==================== UTILITIES ====================
