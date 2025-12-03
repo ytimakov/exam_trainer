@@ -1583,11 +1583,13 @@
             testFilter: 'all',
             testCurrentIndex: 0,
             testStartTime: null,
+            filteredTestQuestions: [], // Отфильтрованный список вопросов теста
             
             // Result mode
             lastResult: null,
             resultFilter: 'all',
             resultCurrentIndex: 0,
+            filteredResultQuestions: [], // Отфильтрованный список вопросов результата
             
             // Filters
             filters: {
@@ -2358,6 +2360,9 @@
                 questions = questions.filter(q => !state.testAnswers[q.id]);
             }
             
+            // Сохраняем отфильтрованный список для навигации
+            state.filteredTestQuestions = questions;
+            
             const answered = Object.keys(state.testAnswers).length;
             const skipped = state.testQuestions.length - answered;
             
@@ -2371,12 +2376,12 @@
             });
             
             document.getElementById('test-question-list').innerHTML = questions.map((q, idx) => {
-                const globalIdx = state.testQuestions.indexOf(q);
+                const isActive = state.filteredTestQuestions[state.testCurrentIndex]?.id === q.id;
                 const hasAnswer = state.testAnswers[q.id];
                 
                 return `
-                    <div class="question-item ${globalIdx === state.testCurrentIndex ? 'active' : ''}" 
-                         onclick="openTestQuestion(${globalIdx})">
+                    <div class="question-item ${isActive ? 'active' : ''}" 
+                         onclick="openTestQuestion(${idx})">
                         <div class="question-item-header">
                             <span class="question-number">${q.question_number || q.id.slice(0,8)}</span>
                             ${hasAnswer ? '<span class="badge badge-correct">✓ Отвечен</span>' : '<span class="badge badge-skipped">○ Пропущен</span>'}
@@ -2389,6 +2394,7 @@
 
         function setTestFilter(filter) {
             state.testFilter = filter;
+            state.testCurrentIndex = 0; // Сбрасываем индекс при смене фильтра
             renderTestQuestionList();
         }
 
@@ -2399,12 +2405,14 @@
         }
 
         function renderTestQuestionCard() {
-            const q = state.testQuestions[state.testCurrentIndex];
+            // Используем отфильтрованный список для навигации
+            const filteredList = state.filteredTestQuestions.length > 0 ? state.filteredTestQuestions : state.testQuestions;
+            const q = filteredList[state.testCurrentIndex];
             if (!q) return;
             
             const progress = q.progress || {};
             const selectedAnswer = state.testAnswers[q.id];
-            const total = state.testQuestions.length;
+            const total = filteredList.length;
             const answered = Object.keys(state.testAnswers).length;
             
             document.getElementById('test-nav-info').textContent = `${state.testCurrentIndex + 1} / ${total}`;
@@ -2439,14 +2447,16 @@
         }
 
         function selectTestAnswer(answerId) {
-            const q = state.testQuestions[state.testCurrentIndex];
+            const filteredList = state.filteredTestQuestions.length > 0 ? state.filteredTestQuestions : state.testQuestions;
+            const q = filteredList[state.testCurrentIndex];
             state.testAnswers[q.id] = answerId;
             renderTestQuestionCard();
             renderTestQuestionList();
         }
 
         async function toggleTestMastered() {
-            const q = state.testQuestions[state.testCurrentIndex];
+            const filteredList = state.filteredTestQuestions.length > 0 ? state.filteredTestQuestions : state.testQuestions;
+            const q = filteredList[state.testCurrentIndex];
             const progress = q.progress || {};
             await toggleMastered(q.id, !progress.mastered);
             q.progress = q.progress || {};
@@ -2455,7 +2465,8 @@
         }
 
         function navTestQuestion(dir) {
-            const total = state.testQuestions.length;
+            const filteredList = state.filteredTestQuestions.length > 0 ? state.filteredTestQuestions : state.testQuestions;
+            const total = filteredList.length;
             if (dir === 'first') state.testCurrentIndex = 0;
             else if (dir === 'last') state.testCurrentIndex = total - 1;
             else if (dir === 'prev' && state.testCurrentIndex > 0) state.testCurrentIndex--;
@@ -2569,6 +2580,9 @@
                 questions = questions.filter(q => !state.lastResult.answers[q.id]);
             }
             
+            // Сохраняем отфильтрованный список для навигации
+            state.filteredResultQuestions = questions;
+            
             document.getElementById('result-question-count').textContent = `${questions.length} вопросов`;
             
             // Update filter buttons
@@ -2577,7 +2591,7 @@
             });
             
             document.getElementById('result-question-list').innerHTML = questions.map((q, idx) => {
-                const globalIdx = state.lastResult.questions.indexOf(q);
+                const isActive = state.filteredResultQuestions[state.resultCurrentIndex]?.id === q.id;
                 const hasAnswer = state.lastResult.answers[q.id];
                 const isCorrect = q.result?.is_correct;
                 
@@ -2587,7 +2601,7 @@
                 else badge = '<span class="badge badge-incorrect">✗ Неверно</span>';
                 
                 return `
-                    <div class="question-item" onclick="openResultQuestion(${globalIdx})">
+                    <div class="question-item ${isActive ? 'active' : ''}" onclick="openResultQuestion(${idx})">
                         <div class="question-item-header">
                             <span class="question-number">${q.question_number || q.id.slice(0,8)}</span>
                             ${badge}
@@ -2600,6 +2614,7 @@
 
         function setResultFilter(filter) {
             state.resultFilter = filter;
+            state.resultCurrentIndex = 0; // Сбрасываем индекс при смене фильтра
             renderResultQuestionList();
         }
 
@@ -2610,14 +2625,16 @@
         }
 
         function renderResultQuestionCard() {
-            const q = state.lastResult.questions[state.resultCurrentIndex];
+            // Используем отфильтрованный список для навигации
+            const filteredList = state.filteredResultQuestions.length > 0 ? state.filteredResultQuestions : state.lastResult.questions;
+            const q = filteredList[state.resultCurrentIndex];
             if (!q) return;
             
             const result = state.lastResult.results.find(r => r.question.id === q.id);
             const selectedAnswer = state.lastResult.answers[q.id];
             const correctAnswers = result?.correct_answers || [];
             const progress = result?.progress || q.progress || {};
-            const total = state.lastResult.questions.length;
+            const total = filteredList.length;
             
             document.getElementById('result-nav-info').textContent = `${state.resultCurrentIndex + 1} / ${total}`;
             
@@ -2674,7 +2691,8 @@
         }
 
         async function toggleResultMastered() {
-            const q = state.lastResult.questions[state.resultCurrentIndex];
+            const filteredList = state.filteredResultQuestions.length > 0 ? state.filteredResultQuestions : state.lastResult.questions;
+            const q = filteredList[state.resultCurrentIndex];
             const result = state.lastResult.results.find(r => r.question.id === q.id);
             const progress = result?.progress || q.progress || {};
             await toggleMastered(q.id, !progress.mastered);
@@ -2686,7 +2704,8 @@
         }
 
         function navResultQuestion(dir) {
-            const total = state.lastResult.questions.length;
+            const filteredList = state.filteredResultQuestions.length > 0 ? state.filteredResultQuestions : state.lastResult.questions;
+            const total = filteredList.length;
             if (dir === 'first') state.resultCurrentIndex = 0;
             else if (dir === 'last') state.resultCurrentIndex = total - 1;
             else if (dir === 'prev' && state.resultCurrentIndex > 0) state.resultCurrentIndex--;
